@@ -1,0 +1,14 @@
+{
+    "require": {
+        "smalot/smtp-server": "dev-master",
+        "php-mime-mail-parser/php-mime-mail-parser": "^2.6"
+    },
+    "require-dev": {
+        "phpmailer/phpmailer": "^5.2"
+    },
+    "autoload": {
+        "psr-4" : {
+            "App\\" : ["src"]
+        }
+    }
+}
