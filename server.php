@@ -12,12 +12,11 @@ use Smalot\Smtp\Server\Server;
 
 $dispatcher = new EventDispatcher();
 
-//$stream = fopen('php://output', 'w');
-//$handler = new StreamHandler($stream, Logger::DEBUG);
-$handler = new \Monolog\Handler\SyslogHandler('smtp', LOG_USER, \Monolog\Logger::INFO);
-$logger = new Logger('log');//, [$handler]);
-$dispatcher->addSubscriber(new LogSubscriber($logger));
-$dispatcher->addSubscriber(new ServerSubscriber($logger));
+$stream = fopen('php://output', 'w');
+$handler = new StreamHandler($stream, Logger::INFO);
+$logger = new Logger('log', [$handler]);
+//$dispatcher->addSubscriber(new LogSubscriber($logger));
+$dispatcher->addSubscriber(new ServerSubscriber($logger, '/data'));
 
 $loop = Factory::create();
 $server = new Server($loop, $dispatcher);

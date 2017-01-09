@@ -1,0 +1,8 @@
+server:
+  build: .
+  ports:
+    - "25:25"
+  expose:
+    - "9001"
+  volumes:
+    - "./data:/data"

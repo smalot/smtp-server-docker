@@ -3,6 +3,7 @@
 namespace App\Event;
 
 use PhpMimeMailParser\Parser;
+use Psr\Log\LoggerInterface;
 use Smalot\Smtp\Server\Event\MessageReceivedEvent;
 use Smalot\Smtp\Server\Events;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -13,8 +14,25 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class ServerSubscriber implements EventSubscriberInterface
 {
-    public function __construct()
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
+
+    /**
+     * @var string
+     */
+    protected $folder;
+
+    /**
+     * ServerSubscriber constructor.
+     * @param LoggerInterface $logger
+     * @param string $folder
+     */
+    public function __construct(LoggerInterface $logger, $folder)
     {
+        $this->logger = $logger;
+        $this->folder = $folder;
     }
 
     /**
@@ -35,18 +53,41 @@ class ServerSubscriber implements EventSubscriberInterface
         $parser = new Parser();
         $parser->setText($event->getMessage());
 
-        var_dump($parser->getHeaders());
-        var_dump($parser->getMessageBody());
-        var_dump($parser->getMessageBody('html'));
+        $details = [
+          'from' => $parser->getHeader('from'),
+          'to' => $parser->getHeader('to'),
+          'subject' => $parser->getHeader('subject'),
+          'attachments' => count($parser->getAttachments()),
+        ];
 
-        var_dump('attachments:');
+        if ($messageId = md5(trim($parser->getHeader('message-id'), '<>'))) {
+            $details['id'] = $messageId;
+        } else {
+            $messageId = $this->generateUniqId();
+        }
+
+        $this->logger->info('Message received: '.strlen($event->getMessage()).' bytes', $details);
+
+        file_put_contents($this->folder.DIRECTORY_SEPARATOR.$messageId.'.eml', $event->getMessage());
+
+        mkdir($this->folder.DIRECTORY_SEPARATOR.$messageId);
+
         foreach ($parser->getAttachments() as $attachment) {
-            var_dump($attachment->getContentID());
-            var_dump($attachment->getFilename());
-            $file = tempnam(sys_get_temp_dir(), 'attachment_');
+            $file = $this->folder.DIRECTORY_SEPARATOR.$messageId.DIRECTORY_SEPARATOR.$attachment->getFilename();
             $dest = fopen($file, 'w');
             stream_copy_to_stream($attachment->getStream(), $dest);
             fclose($dest);
         }
+    }
+
+    /**
+     * @return string
+     */
+    protected function generateUniqId()
+    {
+        $strong = true;
+        $random = openssl_random_pseudo_bytes(32, $strong);
+
+        return bin2hex($random);
     }
 }

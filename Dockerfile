@@ -45,15 +45,17 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" &&
     mv composer.phar /usr/bin/composer
 
 # Build project.
-RUN mkdir /app
+RUN mkdir /app /data
 WORKDIR /app
-COPY composer.json /app/
-COPY config/php.ini /usr/local/etc/php
+COPY composer.json  /app/composer.json
+COPY config/php.ini /usr/local/etc/php/php.ini
 RUN composer update
 
-COPY server.php /app/
-COPY src /app/
+COPY server.php /app/server.php
+COPY src        /app/src
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+VOLUME /data
 
 EXPOSE 25 9001
 
